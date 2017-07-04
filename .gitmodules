@@ -1,0 +1,9 @@
+[submodule "build_scripts"]
+	path = build_scripts
+	url = https://github.com/darthsuogles/build_scripts.git
+[submodule "Lmod"]
+	path = Lmod
+	url = https://github.com/TACC/Lmod.git
+[submodule "linuxbrew"]
+	path = linuxbrew
+	url = https://github.com/Linuxbrew/linuxbrew.git
