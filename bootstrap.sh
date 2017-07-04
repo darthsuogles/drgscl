@@ -19,7 +19,7 @@ infra_luarocks_dir="${drgscl_infra_dir}/luarocks"
 
 infra_lmod_install_dir="${drgscl_infra_dir}/pkg/Lmod/edge"
 infra_lmod_dir="${drgscl_infra_dir}/Lmod"
-infra_modules_dir="${drgscl_base}/modules"
+infra_modules_dir="${drgscl_base}/modulefiles"
 
 # Other packages will be installed here
 drgscl_install_dir="${drgscl_base}/cellar"
@@ -38,6 +38,7 @@ log_info "Prepareing local install directories under ${drgscl_base}"
 mkdir -p "${drgscl_base}"
 mkdir -p "${drgscl_infra_dir}"
 mkdir -p "${drgscl_install_dir}"
+mkdir -p "${infra_modules_dir}"
 
 git submodule update --init --recursive --remote
 
@@ -152,29 +153,26 @@ function build_lmod {
 [ -d "${infra_lmod_dir}/" ] || log_errs "failed to install Lmod"
 
 
-cat <<__EOF_ZSH__ > ${HOME}/.zshrc.lmod
-export PATH=${infra_lua_dir}/bin:${infra_luarocks_dir}/bin:\$PATH
+touch "${drgscl_base}/.env.sh"
+cat <<__EOF_ENV_HEADER__ | tee "${drgscl_base}/.env.sh"
+export PATH="${infra_lua_dir}/bin:${infra_luarocks_dir}/bin:\$PATH"
 export LD_LIBRARY_PATH="${LINUXBREW_ROOT}/lib:${LD_LIBRARY_PATH}"
 export PKG_CONFIG_PATH="${LINUXBREW_ROOT}/lib/pkgconfig/${PKG_CONFIG_PATH}"
 export LUA_PATH="$LUA_PATH"
 export LUA_CPATH="$LUA_CPATH"
 
-export MODULEPATH=${HOME}/local/.drgscl/modulefiles
+export MODULEPATH="${infra_modules_dir}"
 export LMOD_COLORIZE="YES"
 
+__EOF_ENV_HEADER__
+
+cat <<__EOF_ZSH__ > ${HOME}/.zshrc.lmod
+source ${drgscl_base}/.env.sh
 source ${infra_lmod_dir}/lmod/lmod/init/zsh
 __EOF_ZSH__
 
 cat <<__EOF_BASH__ > ${HOME}/.bashrc.lmod
-export PATH=${infra_lua_dir}/bin:${infra_luarocks_dir}/bin:\$PATH
-export LD_LIBRARY_PATH="${LINUXBREW_ROOT}/lib:${LD_LIBRARY_PATH}"
-export PKG_CONFIG_PATH="${LINUXBREW_ROOT}/lib/pkgconfig/${PKG_CONFIG_PATH}"
-export LUA_PATH="$LUA_PATH"
-export LUA_CPATH="$LUA_CPATH"
-
-export MODULEPATH=${HOME}/local/.drgscl/modulefiles
-export LMOD_COLORIZE="YES"
-
+source ${drgscl_base}/.env.sh
 source ${infra_lmod_dir}/lmod/lmod/init/bash
 __EOF_BASH__
 
