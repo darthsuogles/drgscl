@@ -1,37 +1,24 @@
 #!/bin/bash
 
+set -eu
+
 _bsd_="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+source "${_bsd_}/params.const.sh"
+source "${_bsd_}/lib_pprint.sh"
+source "${_bsd_}/lib_wisper_fetch.sh"
+
 ##=========================================================
-drgscl_base="${HOME}/.drgscl"
-
-# Build infra: Lmod, lua
-drgscl_infra_dir="${drgscl_base}/infra"
-
 lua_version=5.3.4
 lua_version_major="${lua_version%.*}"
 infra_lua_install_dir="${drgscl_infra_dir}/pkg/lua/${lua_version}"
-infra_lua_dir="${drgscl_infra_dir}/lua"
 
 luarocks_version=2.4.2
 infra_luarocks_install_dir="${drgscl_infra_dir}/pkg/luarocks/${luarocks_version}"
-infra_luarocks_dir="${drgscl_infra_dir}/luarocks"
 
-infra_lmod_install_dir="${drgscl_infra_dir}/pkg/Lmod/edge"
-infra_lmod_dir="${drgscl_infra_dir}/Lmod"
-infra_modules_dir="${drgscl_base}/modulefiles"
-
-# Other packages will be installed here
-drgscl_install_dir="${drgscl_base}/cellar"
-#INSTALLER_PERL_VERSION=5.24.0
+infra_lmod_version=edge
+infra_lmod_install_dir="${drgscl_infra_dir}/pkg/Lmod/${infra_lmod_version}"
 ##=========================================================
-
-OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-
-source ${_bsd_}/lib_pprint.sh
-source ${_bsd_}/lib_wisper_fetch.sh
-
-set -eu
 
 # Bootstrap the whole building process
 log_info "Prepareing local install directories under ${drgscl_base}"

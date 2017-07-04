@@ -1,6 +1,65 @@
 #!/bin/bash
 # -*- shell-script -*-
-source ~/.drgscl/.env.sh
-source ~/.drgscl/infra/Lmod/lmod/lmod/init/bash
+
+set -eu
+
+_bsd_="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "${_bsd_}/params.const.sh"
+source "${_bsd_}/lib_pprint.sh"
+source "${drgscl_base}/.env.sh"
+source "${drgscl_infra_lmod_init}/bash"
+
+function update_llvm {
+    which clang-3.9 &>/dev/null && log_info "llvm already in latest version" && return 0
+    wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+    sudo apt install clang-3.9 clang-3.9-doc \
+	 libclang-common-3.9-dev libclang-3.9-dev libclang1-3.9 libclang1-3.9-dbg \
+	 libllvm3.9 libllvm3.9-dbg lldb-3.9 \
+	 llvm-3.9 llvm-3.9-dev llvm-3.9-doc llvm-3.9-runtime \
+	 clang-format-3.9 python-clang-3.9 libfuzzer-3.9-dev
+}
+
+function update_gcc {
+    local _gcc_ver="$(gcc -dumpversion | cut -f1 -d.)"
+    if [[ 6 -eq "${_gcc_ver}" ]]; then
+	log_info "gcc version already up-to-date"; return 0
+    fi
+    log_info "updating gcc toolchain: https://wiki.ubuntu.com/ToolChain"
+cat << _TOOLCHAIN_EOF_ | sudo bash
+    add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+	&& apt-get -y update && apt-get install -y gcc-6 g++-6 gfortran-6 \
+	&& update-alternatives --install \
+			       /usr/bin/gcc gcc /usr/bin/gcc-6 90 \
+			       --slave /usr/bin/g++ g++ /usr/bin/g++-6 \
+			       --slave /usr/bin/gfortran gfortran /usr/bin/gfortran-6 \
+	&& ln -sfn /usr/bin/gcc /usr/bin/cc
+_TOOLCHAIN_EOF_
+}
+
+function update_toolchain { update_gcc; update_llvm; }
+
+update_toolchain
+
+function import_brew {
+    export PATH="${HOME}/.drgscl/cellar/linuxbrew/dev/bin:${PATH:-}"
+    export HOMEBREW_BUILD_FROM_SOURCE=yes
+}
+
+while getopts "bmi:s:" SUB_CMD; do
+    case "${SUB_CMD}" in 
+	m) log_info "using module"
+	   shift && module $@ && return 0 ;;
+	b) log_info "using linuxbrew"
+	   shift && exec brew $@ ;;
+	i) log_info "[linuxbrew] install package ${OPTARG}"
+	   import_brew
+	   exec brew install "${OPTARG}" ;;
+	s) log_info "search for package ${OPTARG}"
+	   module keyword "${OPTARG}" || echo "okay"
+	   import_brew
+	   exec brew search "${OPTARG}" ;;	   
+    esac
+done
 
 module $@
